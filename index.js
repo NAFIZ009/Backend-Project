@@ -42,7 +42,7 @@ try{
         userInfo.password=hashedPassword;
         const result = await userAccount.insertOne(userInfo);
         if(!result.insertedId){
-            res.status(400).json({
+            return res.status(400).json({
                 message: 'Account Creation Failed',
             });
         }
@@ -62,7 +62,7 @@ try{
         };
         const result = await userPost.insertOne(post);
         if(!result.insertedId){
-            res.status(400).json({
+            return res.status(400).json({
                 message: 'Post Creation Failed',
             });
         }
@@ -70,8 +70,38 @@ try{
             message: 'Post Created Successfully',
         });
         
-    })
+    });
 
+    //view all posts
+    //get all posts from the property called posts form the object
+    app.get('/posts', async(req, res) =>{
+        const posts=await userPost.find({}).toArray();
+        if(!posts){
+            return res.status(400).json({
+                message: 'No Post Found',
+            });
+        };
+        res.status(200).json({
+            posts
+        });
+    });
+
+    //getting post of a specific user
+    //get all posts from the property called posts form the object
+    app.get('/:username/post',async(req,res)=>{
+        const username=req.params.username;
+        const posts=await userPost.find({username}).toArray();
+        if(!posts){
+            return res.status(400).json({
+                message: 'No Post Found',
+            });
+        };
+        res.status(200).json({
+            posts
+        });
+    });
+
+    
     //testing 
     // app.delete("/delete", async function(req, res) {
     //     const result=await userAccount.deleteMany({});
