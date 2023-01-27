@@ -94,6 +94,20 @@ try{
         });
     });
 
+    //get all the information about a specific user
+    app.get('/users/:username',async(req,res)=>{
+        const username=req.params.username;
+        const user=await userAccount.findOne({username});
+        if(!user){
+            return res.status(404).json({
+                message: 'User not found'
+            });
+        }
+        res.status(200).json({
+            user
+        });
+    });
+
     //create a post
     //client site should post a object with data property in request body 
     app.post('/:username/post', async(req, res) =>{
