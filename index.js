@@ -12,7 +12,7 @@ app.use(express.json());
 require('dotenv').config();
 //verify jwt
 function verifyToken(req, res, next) {
-    const token = req.headers["x-access-token"];
+    const token = req.headers.token;
     if (!token) {
       return res.status(401).json({ message: "No token provided" });
     }
@@ -24,8 +24,7 @@ function verifyToken(req, res, next) {
       return res.status(401).json({ message: "Invalid token" });
     }
   };
-//all route should have the jwt token for access
-app.use(verifyToken());
+
 
 //mongodb
 const { MongoClient, ServerApiVersion } = require('mongodb');
@@ -73,7 +72,7 @@ try{
 
     //login
     //getting jwt token
-    app.get('/login', async(req, res) => {
+    app.get('/login',verifyToken, async(req, res) => {
         const {username,password} = req.body;
         const findUser=await userAccount.findOne({username});
         if(!findUser){
@@ -95,7 +94,7 @@ try{
     });
 
     //get all the information about a specific user
-    app.get('/users/:username',async(req,res)=>{
+    app.get('/users/:username',verifyToken,async(req,res)=>{
         const username=req.params.username;
         const user=await userAccount.findOne({username});
         if(!user){
@@ -110,7 +109,7 @@ try{
 
     //create a post
     //client site should post a object with data property in request body 
-    app.post('/:username/post', async(req, res) =>{
+    app.post('/:username/post',verifyToken, async(req, res) =>{
         const username=req.params.username;
         const {data}=req.body;
         const post={
@@ -131,7 +130,7 @@ try{
 
     //view all posts
     //get all posts from the property called posts form the object
-    app.get('/posts', async(req, res) =>{
+    app.get('/posts',verifyToken, async(req, res) =>{
         const posts=await userPost.find({}).toArray();
         if(!posts){
             return res.status(400).json({
@@ -145,7 +144,7 @@ try{
 
     //getting post of a specific user
     //get all posts from the property called posts form the object
-    app.get('/:username/post',async(req,res)=>{
+    app.get('/:username/post',verifyToken,async(req,res)=>{
         const username=req.params.username;
         const posts=await userPost.find({username}).toArray();
         if(!posts){
@@ -161,7 +160,7 @@ try{
     //following a user
     //:username is referred to the user who is followed
     //client site should give the current user's username in req.body
-    app.post('/users/:username/follow',async(req,res)=>{
+    app.post('/users/:username/follow',verifyToken,async(req,res)=>{
         //getting the users
         const currentUser = req.body.username;
         const followedUser = req.params.username;
@@ -220,7 +219,7 @@ try{
 
     //getting followers of specified user
     //response will be a json object with followersCount(number of followers) and followers(name of followers)
-    app.get('/users/:username/followers',async(req,res)=>{
+    app.get('/users/:username/followers',verifyToken,async(req,res)=>{
         const username = req.params.username;
         const followers = await userAccount.findOne({username});
         if(!followers){
@@ -240,7 +239,7 @@ try{
 
     //getting following of specified user
     //response will be a json object with followingCount(number of following) and following(name of following user)
-    app.get('/users/:username/following',async(req,res)=>{
+    app.get('/users/:username/following',verifyToken,async(req,res)=>{
         const username = req.params.username;
         const following = await userAccount.findOne({username});
         if(!following){
@@ -261,7 +260,7 @@ try{
     //for unfollow a specified user
     //:username is referred to the user who will be unfollowed
     //client site should give the current user's username in req.body
-    app.delete('/users/:username/follow',async(req,res)=>{
+    app.delete('/users/:username/follow',verifyToken,async(req,res)=>{
         //getting the users
         const currentUser = req.body.username;
         const followedUser = req.params.username;
@@ -309,14 +308,7 @@ try{
         return res.status(200).json({
             message: `${currentUser} Is SuccessFully UnFollow ${followedUser}`,
         });
-    })
-
-
-    //testing 
-    // app.delete("/delete", async function(req, res) {
-    //     const result=await userAccount.deleteMany({});
-    //     res.send(result)
-    // });
+    });
 
 
 
