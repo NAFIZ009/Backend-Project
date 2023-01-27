@@ -17,6 +17,7 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
 
 //mongodb collections
 const userAccount=client.db("userAccount").collection("account");
+const userPost=client.db("userAccount").collection("post");
 
 app.get('/', (req, res) => {
   res.send('Hello World!');
@@ -29,7 +30,6 @@ try{
     //client site should post a object with username and password in request body
     app.post('/users',async (req, res) => {
         const userInfo=req.body;
-        console.log(userInfo);
         const {password}=userInfo;
         //encrypting password
         const salt =await bcrypt.genSaltSync(10);
@@ -51,11 +51,34 @@ try{
         });
     });
 
+    //create a post
+    //client site should post a object with data property in request body 
+    app.post('/:username/post', async(req, res) =>{
+        const username=req.params.username;
+        const {data}=req.body;
+        const post={
+            username,
+            data
+        };
+        const result = await userPost.insertOne(post);
+        if(!result.insertedId){
+            res.status(400).json({
+                message: 'Post Creation Failed',
+            });
+        }
+        res.status(201).json({
+            message: 'Post Created Successfully',
+        });
+        
+    })
+
     //testing 
     // app.delete("/delete", async function(req, res) {
     //     const result=await userAccount.deleteMany({});
     //     res.send(result)
-    // })
+    // });
+
+
 
 }catch(err){
     console.log(err);
