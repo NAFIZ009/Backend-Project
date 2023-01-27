@@ -2,6 +2,7 @@
 const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const port =process.env.PORT || 5000;
 const app = express();
 
@@ -9,6 +10,22 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 require('dotenv').config();
+//verify jwt
+function verifyToken(req, res, next) {
+    const token = req.headers["x-access-token"];
+    if (!token) {
+      return res.status(401).json({ message: "No token provided" });
+    }
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_PK);
+      req.userId = decoded.userId;
+      next();
+    } catch (error) {
+      return res.status(401).json({ message: "Invalid token" });
+    }
+  };
+//all route should have the jwt token for access
+app.use(verifyToken());
 
 //mongodb
 const { MongoClient, ServerApiVersion } = require('mongodb');
@@ -45,8 +62,35 @@ try{
                 message: 'Account Creation Failed',
             });
         }
+        const token = jwt.sign({ userId:result.insertedId }, process.env.JWT_PK, { algorithm: 'RS256' });
+
         res.status(201).json({
             message: 'Account Created Successfully',
+            token,
+            user:userInfo.username
+        });
+    });
+
+    //login
+    //getting jwt token
+    app.get('/login', async(req, res) => {
+        const {username,password} = req.body;
+        const findUser=await userAccount.findOne({username});
+        if(!findUser){
+            return res.status(400).json({
+                message: 'Invalid Username'
+            })
+        };
+        const isMatch = await bcrypt.compare(password, findUser.password);
+        if(!isMatch){
+            return res.status(400).json({
+                message: 'Invalid Password'
+            })
+        };
+        var token = jwt.sign({ userId:findUser._id }, process.env.JWT_PK, { algorithm: 'RS256' });
+        res.status(200).json({
+            token,
+            user:findUser.username
         });
     });
 
@@ -252,6 +296,8 @@ try{
             message: `${currentUser} Is SuccessFully UnFollow ${followedUser}`,
         });
     })
+
+
     //testing 
     // app.delete("/delete", async function(req, res) {
     //     const result=await userAccount.deleteMany({});
