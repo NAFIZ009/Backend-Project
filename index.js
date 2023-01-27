@@ -25,7 +25,6 @@ app.get('/', (req, res) => {
 
 
 try{
-
     //create user account
     //client site should post a object with username and password in request body
     app.post('/users',async (req, res) => {
@@ -40,7 +39,7 @@ try{
             });
         }
         userInfo.password=hashedPassword;
-        const result = await userAccount.insertOne(userInfo);
+        const result = await userAccount.insertOne({...userInfo,followers:[],following:[]});
         if(!result.insertedId){
             return res.status(400).json({
                 message: 'Account Creation Failed',
@@ -101,7 +100,65 @@ try{
         });
     });
 
-    
+    //following a user
+    //:username is referred to the user who is followed
+    //client site should give the current user's username in req.body
+    app.post('/users/:username/follow',async(req,res)=>{
+        //getting the users
+        const currentUser = req.body.username;
+        const followedUser = req.params.username;
+        const currentUsersInfo = await userAccount.findOne({username:currentUser});
+        const followedUserInfo = await userAccount.findOne({username:followedUser});
+
+        //if the username and followed username are the same
+        if(currentUser === followedUser){
+            return res.status(400).json({
+                message: 'You Can\'t Follow Yourself',
+            }); 
+        };
+
+        //if the followed user is not available
+        if(!followedUserInfo){
+            return res.status(400).json({
+                message: `${followedUser} Is Not Found`,
+            }); 
+        };
+
+        //if the user is not available
+        if(!currentUser){
+            return res.status(400).json({
+                message: `${currentUser} Is Not Found`,
+            }); 
+        };
+
+        //if the user is already followed
+        if(currentUsersInfo.following.includes(followedUser)){
+            return res.status(400).json({
+                message: `You Already Followed ${followedUser}`,
+            });
+        };
+
+        //updating the current user's following list
+        const updateFollowingInfo = {
+            $push: { following:followedUser }
+        };
+        const updateFollowing =await userAccount.updateOne({username:currentUser},updateFollowingInfo);
+        
+        //updating the followed user's following list
+        const updateFollowersInfo = {
+            $push: { followers:currentUser }
+        };
+        const updateFollowers =await userAccount.updateOne({username:followedUser},updateFollowersInfo);
+
+        if(!updateFollowing.modifiedCount===1&&updateFollowers.modifiedCount==1){
+            return res.status(400).json({
+                message: `Can\'t Follow The User`,
+            });
+        }
+        return res.status(200).json({
+            message: `${currentUser} Following ${followedUser}`,
+        });
+    });
     //testing 
     // app.delete("/delete", async function(req, res) {
     //     const result=await userAccount.deleteMany({});
