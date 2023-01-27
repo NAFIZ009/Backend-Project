@@ -199,6 +199,59 @@ try{
             following:following.following
         })
     });
+
+    //for unfollow a specified user
+    //:username is referred to the user who will be unfollowed
+    //client site should give the current user's username in req.body
+    app.delete('/users/:username/follow',async(req,res)=>{
+        //getting the users
+        const currentUser = req.body.username;
+        const followedUser = req.params.username;
+        const currentUsersInfo = await userAccount.findOne({username:currentUser});
+        const followedUserInfo = await userAccount.findOne({username:followedUser});
+
+        //if the followed user is not available
+        if(!followedUserInfo){
+            return res.status(400).json({
+                message: `${followedUser} Is Not Found`,
+            }); 
+        };
+
+        //if the user is not available
+        if(!currentUser){
+            return res.status(400).json({
+                message: `${currentUser} Is Not Found`,
+            }); 
+        };
+
+        //if the user is not following
+        if(!currentUsersInfo.following.includes(followedUser)){
+            return res.status(400).json({
+                message: `You Are Not Following ${followedUser}`,
+            });
+        };
+
+        //updating the current user's following list by removing the following user from the list
+        const updateFollowingInfo = {
+            $pull: { following:followedUser }
+        };
+        const updateFollowing =await userAccount.updateOne({username:currentUser},updateFollowingInfo);
+
+        //updating the followed user's following list by removing the follower user from the list
+        const updateFollowersInfo = {
+            $pull: { followers:currentUser }
+        };
+        const updateFollowers =await userAccount.updateOne({username:followedUser},updateFollowersInfo);
+
+        if(!updateFollowing.modifiedCount===1&&updateFollowers.modifiedCount==1){
+            return res.status(400).json({
+                message: `Can\'t Unfollow The User`,
+            });
+        }
+        return res.status(200).json({
+            message: `${currentUser} Is SuccessFully UnFollow ${followedUser}`,
+        });
+    })
     //testing 
     // app.delete("/delete", async function(req, res) {
     //     const result=await userAccount.deleteMany({});
