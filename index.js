@@ -180,7 +180,25 @@ try{
         })
     });
 
-    
+    //getting following of specified user
+    //response will be a json object with followingCount(number of following) and following(name of following user)
+    app.get('/users/:username/following',async(req,res)=>{
+        const username = req.params.username;
+        const following = await userAccount.findOne({username});
+        if(!following){
+            return res.status(404).json({
+                message:`Can\'t Find ${username}`
+            });
+        }else if(following.following.length<=0){
+            return res.status(404).json({
+                message:`Can\'t Find Any following For ${username}`
+            });
+        };
+        res.status(200).json({
+            followingCount:following.following.length,
+            following:following.following
+        })
+    });
     //testing 
     // app.delete("/delete", async function(req, res) {
     //     const result=await userAccount.deleteMany({});
