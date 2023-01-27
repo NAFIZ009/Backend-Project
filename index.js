@@ -143,7 +143,7 @@ try{
             $push: { following:followedUser }
         };
         const updateFollowing =await userAccount.updateOne({username:currentUser},updateFollowingInfo);
-        
+
         //updating the followed user's following list
         const updateFollowersInfo = {
             $push: { followers:currentUser }
@@ -159,6 +159,28 @@ try{
             message: `${currentUser} Following ${followedUser}`,
         });
     });
+
+    //getting followers of specified user
+    //response will be a json object with followersCount(number of followers) and followers(name of followers)
+    app.get('/users/:username/followers',async(req,res)=>{
+        const username = req.params.username;
+        const followers = await userAccount.findOne({username});
+        if(!followers){
+            return res.status(404).json({
+                message:`Can\'t Find ${username}`
+            });
+        }else if(followers.followers.length<=0){
+            return res.status(404).json({
+                message:`Can\'t Find Any Followers For ${username}`
+            });
+        };
+        res.status(200).json({
+            followersCount:followers.followers.length,
+            followers:followers.followers
+        })
+    });
+
+    
     //testing 
     // app.delete("/delete", async function(req, res) {
     //     const result=await userAccount.deleteMany({});
